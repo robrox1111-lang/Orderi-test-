@@ -1,0 +1,98 @@
+rednet.open("back")
+
+local term = require("term")
+local event = require("event")
+
+term.clear()
+term.setCursorPos(1,1)
+io.write("Enter your name: ")
+local playerName = read()
+if playerName == "" then playerName = "Player" end
+
+local menu = {
+    ["Burgers"] = {
+        {name="Cheeseburger", price="5 emeralds"},
+        {name="Bacon Burger", price="7 emeralds"},
+        {name="Vegan Burger", price="6 emeralds"}
+    },
+    ["Pizza"] = {
+        {name="Margherita", price="4 diamonds"},
+        {name="Pepperoni", price="6 diamonds"},
+        {name="Four Cheese", price="5 diamonds"}
+    },
+    ["Drinks"] = {
+        {name="Cola", price="2 emeralds"},
+        {name="Orange Juice", price="3 emeralds"},
+        {name="Coffee", price="4 emeralds"}
+    },
+    ["Desserts"] = {
+        {name="Tiramisu", price="6 emeralds"},
+        {name="Ice Cream", price="3 diamonds"},
+        {name="Donut", price="2 emeralds"}
+    }
+}
+
+local function choose(options, title)
+    term.clear()
+    term.setCursorPos(1,1)
+    print(title)
+
+    for i,opt in ipairs(options) do
+        print(i .. ". " .. opt)
+    end
+
+    while true do
+        local _, _, x, y = event.pull("touch")
+        if y >= 2 and y <= (#options+1) then
+            return options[y-1], y-1
+        end
+    end
+end
+
+local cart = {}
+
+while true do
+    local categories = {}
+    for cat,_ in pairs(menu) do
+        table.insert(categories, cat)
+    end
+
+    local category = choose(categories, "Choose category:")
+
+    local items = menu[category]
+    local item_names = {}
+
+    for _, v in ipairs(items) do
+        table.insert(item_names, v.name .. " (" .. v.price .. ")")
+    end
+
+    table.insert(item_names, "✅ Send Order")
+
+    local selection, idx = choose(item_names, "Choose item:")
+
+    if idx == #item_names then
+        if #cart == 0 then
+            term.clear()
+            term.setCursorPos(1,1)
+            print("Cart is empty!")
+            os.sleep(1)
+        else
+            local order_text = playerName .. " -> " .. table.concat(cart, ", ")
+            rednet.broadcast(order_text)
+
+            term.clear()
+            term.setCursorPos(1,1)
+            print("Order sent!")
+            cart = {}
+            os.sleep(1)
+        end
+    else
+        table.insert(cart, category .. " -> " .. selection)
+
+        term.clear()
+        term.setCursorPos(1,1)
+        print("Added to cart:")
+        print(selection)
+        os.sleep(1)
+    end
+end
